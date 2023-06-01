@@ -21,6 +21,7 @@ export function calculateLeaseAmounts(
   leaseLength: number,
   options: LeaseOptions = {}
 ): LeaseAmount[] {
+  console.log("Hey");
   if (options.addedPercentage === undefined) {
     options.addedPercentage = "0,0%";
   }
