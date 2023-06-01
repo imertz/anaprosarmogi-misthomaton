@@ -78,5 +78,10 @@ export function calculateLeaseAmounts(
 }
 
 function getInterestRate(year: number, month: number): string {
+  console.log(rates[year].filter((r: any) => r.m === month.toString())[0]);
   return rates[year].filter((r: any) => r.m === month.toString())[0].a;
 }
+
+const leaseAmounts = calculateLeaseAmounts("2019-02-22", "1000,00", 36);
+
+console.log(leaseAmounts);
