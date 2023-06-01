@@ -1,0 +1,27 @@
+{
+  "name": "yperimerias",
+  "version": "1.2.18",
+  "description": "Calculate the interest",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup index.ts --format cjs,esm --dts",
+    "lint": "tsc",
+    "publish-patch": "npm run build && git stash && npm version patch && git stash pop && git commit -am 'chore(release): publish new version' && git push && npm publish",
+    "publish-minor": "npm run build && git stash && npm version minor && git stash pop && git commit -am 'chore(release): publish new version' && git push && npm publish",
+    "publish-major": "npm run build && git stash && npm version major && git stash pop && git commit -am 'chore(release): publish new version' && git push && npm publish"
+  },
+  "keywords": [],
+  "author": "Ioannis Mertzanis",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.16.0",
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}
