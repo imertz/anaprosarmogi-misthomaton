@@ -1,123 +1,81 @@
-import { start } from "repl";
-import rates from "./rates.json";
-const ratesArray = rates as Rate[];
+import importedRates from "./rates.json";
 
-interface Rate {
-  startDate: string;
-  endDate: string;
-  dikaiopraktikos: string;
-  yperimerias: string;
+const rates = importedRates as any;
+
+interface LeaseOptions {
+  addedPercentage?: string;
+  atLeastPercentage?: string;
+  atMostPercentage?: string;
+  fixedPercentage?: string;
 }
 
-interface Result {
-  startDate: string;
-  endDate: string;
+interface LeaseAmount {
+  month: string;
+  amount: string;
   interestRate: string;
-  interest: string;
-  yperInterestRate: string;
-  yperInterest: string;
 }
 
-export function getInterestRates(
+export function calculateLeaseAmounts(
   startDate: string,
-  endDate: string,
-  amount: number
-): (
-  | Result
-  | {
-      totalInterest: string;
-      interest: string;
-      totalYperInterest: string;
-      yperInterest: string;
-    }
-)[] {
-  startDate = startDate.replace(/-/g, "/");
-  endDate = endDate.replace(/-/g, "/");
-  const result = ratesArray.reduce<
-    (
-      | Result
-      | {
-          totalInterest: string;
-          interest: string;
-          totalYperInterest: string;
-          yperInterest: string;
-        }
-    )[]
-  >((result, rate) => {
-    // add 6 hours to the date to make sure it's the same day
-    const rateStartDate = new Date(rate.startDate as string);
-    rateStartDate.setHours(rateStartDate.getHours() + 6);
-    const rateEndDate = new Date(rate.endDate as string);
-    rateEndDate.setHours(rateEndDate.getHours() + 6);
-    const inputStartDate = new Date(startDate);
-    inputStartDate.setHours(inputStartDate.getHours() + 6);
-    const inputEndDate = new Date(endDate);
-    inputEndDate.setHours(inputEndDate.getHours() + 6);
+  startingAmount: string,
+  leaseLength: number,
+  options: LeaseOptions = {}
+): LeaseAmount[] {
+  if (options.addedPercentage === undefined) {
+    options.addedPercentage = "0,0%";
+  }
+  if (options.atLeastPercentage === undefined) {
+    options.atLeastPercentage = "-100,0%";
+  }
+  if (options.atMostPercentage === undefined) {
+    options.atMostPercentage = "100,0%";
+  }
+  const leaseAmounts: LeaseAmount[] = [];
+  let currentDate = new Date(startDate);
+  // Set time to 12:00 to avoid DST issues
+  currentDate.setHours(12);
+  let currentAmount = parseFloat(startingAmount.replace(",", "."));
+  let lastDateOfAdjustment = new Date(startDate);
 
-    if (rateEndDate < inputStartDate || rateStartDate > inputEndDate) {
-      return result;
-    }
+  for (let i = 0; i < leaseLength; i++) {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
 
-    const startDateToUse =
-      rateStartDate < inputStartDate ? inputStartDate : rateStartDate;
-    const endDateToUse =
-      rateEndDate > inputEndDate ? inputEndDate : rateEndDate;
-
-    const interestRate =
-      rate.dikaiopraktikos &&
-      parseFloat(rate.dikaiopraktikos.replace(",", ".")) / 100;
-    const yperInterestRate =
-      rate.yperimerias && parseFloat(rate.yperimerias.replace(",", ".")) / 100;
-
-    const days = Math.floor(
-      (endDateToUse.getTime() - startDateToUse.getTime()) /
-        (1000 * 60 * 60 * 24)
+    let interestRate =
+      parseFloat(getInterestRate(year, month).replace(",", ".")) +
+      parseFloat(options.addedPercentage.replace(",", "."));
+    interestRate = Math.max(
+      parseFloat(options.atLeastPercentage.replace(",", ".")),
+      Math.min(
+        parseFloat(options.atMostPercentage.replace(",", ".")),
+        interestRate
+      )
     );
-    let daysInYear = 365;
-    // Check if it's a leap year
+    options.fixedPercentage &&
+      (interestRate = parseFloat(options.fixedPercentage.replace(",", ".")));
+
     if (
-      startDateToUse.getFullYear() % 4 === 0 &&
-      (startDateToUse.getFullYear() % 100 !== 0 ||
-        startDateToUse.getFullYear() % 400 === 0)
+      lastDateOfAdjustment.getMonth() + 1 === month &&
+      lastDateOfAdjustment.getFullYear() === year - 1
     ) {
-      daysInYear = 366;
+      currentAmount *= 1 + interestRate / 100;
+      lastDateOfAdjustment = currentDate;
     }
-    const interest =
-      (amount * (interestRate ? interestRate : 0) * (days + 1)) / daysInYear;
-    const yperInterest =
-      (amount * (yperInterestRate ? yperInterestRate : 0) * (days + 1)) /
-      daysInYear;
 
-    result.push({
-      startDate: startDateToUse.toISOString().split("T")[0] as string,
-      endDate: endDateToUse.toISOString().split("T")[0] as string,
-      interestRate: rate.dikaiopraktikos as string,
-      interest: interest.toFixed(2),
-      yperInterestRate: rate.yperimerias as string,
-      yperInterest: yperInterest.toFixed(2),
+    leaseAmounts.push({
+      month: currentDate.toISOString().slice(0, 7),
+      amount: currentAmount.toFixed(2).replace(".", ","),
+      interestRate: interestRate.toFixed(2).replace(".", ","),
     });
+    // Add 12 hours to current date to avoid DST issues
+    currentDate = new Date(currentDate.getTime() + 12 * 60 * 60 * 1000);
 
-    return result;
-  }, []);
-  const totalInterest = result.reduce((total, rate) => {
-    if (typeof rate === "object") {
-      return total + parseFloat(rate.interest);
-    }
-    return total;
-  }, 0);
-  const totalYperInterest = result.reduce((total, rate) => {
-    if (typeof rate === "object") {
-      return total + parseFloat(rate.yperInterest);
-    }
-    return total;
-  }, 0);
-  return [
-    ...result,
-    {
-      totalInterest: totalInterest.toFixed(2),
-      interest: "",
-      totalYperInterest: totalYperInterest.toFixed(2),
-      yperInterest: "",
-    },
-  ];
+    currentDate.setMonth(currentDate.getMonth() + 1);
+  }
+
+  return leaseAmounts;
+}
+
+function getInterestRate(year: number, month: number): string {
+  return rates[year].filter((r: any) => r.m === month.toString())[0].a;
 }
