@@ -21,7 +21,6 @@ export function calculateLeaseAmounts(
   leaseLength: number,
   options: LeaseOptions = {}
 ): LeaseAmount[] {
-  console.log("Hey");
   if (options.addedPercentage === undefined) {
     options.addedPercentage = "0,0%";
   }
@@ -43,7 +42,7 @@ export function calculateLeaseAmounts(
     const month = currentDate.getMonth() + 1;
 
     let interestRate =
-      parseFloat(getInterestRate(year, month).replace(",", ".")) +
+      parseFloat(getInterestRate(year, month)?.replace(",", ".")) +
       parseFloat(options.addedPercentage.replace(",", "."));
     interestRate = Math.max(
       parseFloat(options.atLeastPercentage.replace(",", ".")),
@@ -78,17 +77,12 @@ export function calculateLeaseAmounts(
 }
 
 function getInterestRate(year: number, month: number): string {
-  console.log(rates[year].filter((r: any) => r.m === month.toString())[0]);
-  return rates[year].filter((r: any) => r.m === month.toString())[0].a;
+  return rates[year]?.filter((r: any) => r.m === month.toString())[0]?.a;
 }
 
-const leaseAmounts = calculateLeaseAmounts("2019-02-22", "1000,00", 36, {});
+const leaseAmounts = calculateLeaseAmounts("2023-02-22", "1000,00", 36, {});
 console.log(leaseAmounts);
-console.log(
-  groupLeaseAmounts("2019-02-22", "1000,00", 36, {
-    addedPercentage: "2,0%",
-  })
-);
+console.log(groupLeaseAmounts("2023-02-22", "1000,00", 36, {}));
 
 type LeaseAmounts = {
   start: string;
@@ -130,7 +124,10 @@ export function groupLeaseAmounts(
         }
       }
       if (i !== 0 && arr[i]?.amount !== arr[i - 1]?.amount) {
-        if (result[result.length - 1] !== undefined) {
+        if (
+          result[result.length - 1] !== undefined &&
+          arr[i]?.amount !== "NaN"
+        ) {
           const obj = {
             start: arr[i]?.month,
             end: arr[i]?.month,
