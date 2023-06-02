@@ -82,6 +82,65 @@ function getInterestRate(year: number, month: number): string {
   return rates[year].filter((r: any) => r.m === month.toString())[0].a;
 }
 
-const leaseAmounts = calculateLeaseAmounts("2019-02-22", "1000,00", 36);
-
+const leaseAmounts = calculateLeaseAmounts("2019-02-22", "1000,00", 36, {});
 console.log(leaseAmounts);
+console.log(
+  groupLeaseAmounts("2019-02-22", "1000,00", 36, {
+    addedPercentage: "2,0%",
+  })
+);
+
+type LeaseAmounts = {
+  start: string;
+  end: string;
+  amount: string;
+  interestRate: string;
+};
+
+function groupLeaseAmounts(
+  startDate: string,
+  startingAmount: string,
+  leaseLength: number,
+  options: LeaseOptions = {}
+) {
+  const arr = calculateLeaseAmounts(
+    startDate,
+    startingAmount,
+    leaseLength,
+    options
+  ) as LeaseAmount[];
+  const result: LeaseAmounts[] = [];
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] !== undefined) {
+      if (i === 0) {
+        const obj: LeaseAmounts = {} as LeaseAmounts;
+
+        (obj.start = arr[i]?.month as string),
+          (obj.end = arr[i]?.month as string),
+          (obj.amount = arr[i]?.amount as string),
+          (obj.interestRate = arr[i]?.interestRate as string),
+          result.push(obj);
+      }
+      if (i !== 0 && arr[i]?.amount === arr[i - 1]?.amount) {
+        if (result[result.length - 1] !== undefined) {
+          result[result.length - 1] = {
+            ...(result[result.length - 1] as LeaseAmounts),
+            end: arr[i]?.month as string,
+          };
+        }
+      }
+      if (i !== 0 && arr[i]?.amount !== arr[i - 1]?.amount) {
+        if (result[result.length - 1] !== undefined) {
+          const obj = {
+            start: arr[i]?.month,
+            end: arr[i]?.month,
+            amount: arr[i]?.amount,
+            interestRate: arr[i]?.interestRate,
+          };
+          result.push(obj as LeaseAmounts);
+        }
+      }
+    }
+  }
+  return result;
+}
