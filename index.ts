@@ -97,7 +97,7 @@ type LeaseAmounts = {
   interestRate: string;
 };
 
-function groupLeaseAmounts(
+export function groupLeaseAmounts(
   startDate: string,
   startingAmount: string,
   leaseLength: number,
