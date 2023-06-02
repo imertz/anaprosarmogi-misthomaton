@@ -7,6 +7,7 @@ interface LeaseOptions {
   atLeastPercentage?: string;
   atMostPercentage?: string;
   fixedPercentage?: string;
+  hartosimo?: boolean;
 }
 
 interface LeaseAmount {
@@ -30,11 +31,17 @@ export function calculateLeaseAmounts(
   if (options.atMostPercentage === undefined) {
     options.atMostPercentage = "100,0%";
   }
+  if (options.hartosimo === undefined) {
+    options.hartosimo = false;
+  }
   const leaseAmounts: LeaseAmount[] = [];
   let currentDate = new Date(startDate);
   // Set time to 12:00 to avoid DST issues
   currentDate.setHours(12);
   let currentAmount = parseFloat(startingAmount.replace(",", "."));
+  if (options.hartosimo) {
+    currentAmount *= 1.036;
+  }
   let lastDateOfAdjustment = new Date(startDate);
 
   for (let i = 0; i < leaseLength; i++) {
