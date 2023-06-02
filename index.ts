@@ -81,8 +81,6 @@ function getInterestRate(year: number, month: number): string {
 }
 
 const leaseAmounts = calculateLeaseAmounts("2023-02-22", "1000,00", 36, {});
-console.log(leaseAmounts);
-console.log(groupLeaseAmounts("2023-02-22", "1000,00", 36, {}));
 
 type LeaseAmounts = {
   start: string;
